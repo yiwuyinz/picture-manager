@@ -1,0 +1,162 @@
+<template>
+  <a-form layout="inline" :model="searchParams" @finish="doSearch">
+    <a-form-item label="账号">
+      <a-input v-model:value="searchParams.userAccount" placeholder="输入账号" />
+    </a-form-item>
+    <a-form-item label="用户名">
+      <a-input v-model:value="searchParams.userName" placeholder="输入用户名" />
+    </a-form-item>
+    <a-form-item>
+      <a-button type="primary" html-type="submit">搜索</a-button>
+    </a-form-item>
+  </a-form>
+
+  <a-table
+    :columns="columns"
+    :data-source="dataList"
+    :pagination="pagination"
+    @change="doTableChange"
+  >
+    <template #headerCell="{ column }">
+      <template v-if="column.key === 'name'">
+        <span>
+          <smile-outlined />
+          Name
+        </span>
+      </template>
+    </template>
+
+    <template #bodyCell="{ column, record }">
+      <template v-if="column.dataIndex === 'userAvatar'">
+        <a-image :src="record.userAvatar" :width="60" />
+      </template>
+      <template v-if="column.dataIndex === 'userRole'">
+        <div v-if="record.userRole === 'admin'">
+          <a-tag color="green">管理员</a-tag>
+        </div>
+        <div v-if="record.userRole === 'user'">
+          <a-tag color="blue">用户</a-tag>
+        </div>
+      </template>
+      <template v-if="column.dataIndex === 'createTime'">
+        {{ dayjs(record.createTime).format('YYYY-MM-DD HH:mm:ss') }}
+      </template>
+      <template v-if="column.dataIndex === 'updateTime'">
+        {{ dayjs(record.createTime).format('YYYY-MM-DD HH:mm:ss') }}
+      </template>
+      <template v-if="column.key === 'action'">
+        <a-button danger @click="doDelect(record.id)">删除</a-button>
+      </template>
+    </template>
+  </a-table>
+</template>
+<script lang="ts" setup>
+import { deleteUserUsingPost, listUserVoByPageUsingPost } from '@/api/userController'
+import { SmileOutlined, DownOutlined } from '@ant-design/icons-vue'
+import { message } from 'ant-design-vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import dayjs from 'dayjs'
+const columns = [
+  {
+    title: 'id',
+    dataIndex: 'id',
+  },
+  {
+    title: '账号',
+    dataIndex: 'userAccount',
+  },
+  {
+    title: '用户名',
+    dataIndex: 'userName',
+  },
+  {
+    title: '头像',
+    dataIndex: 'userAvatar',
+  },
+  {
+    title: '简介',
+    dataIndex: 'userProfile',
+  },
+  {
+    title: '用户角色',
+    dataIndex: 'userRole',
+  },
+  {
+    title: '创建时间',
+    dataIndex: 'createTime',
+  },
+  {
+    title: '更新时间',
+    dataIndex: 'updateTime',
+  },
+  {
+    title: '操作',
+    key: 'action',
+  },
+]
+
+// 数据
+const dataList = ref([])
+const total = ref(0)
+
+// 搜索条件
+const searchParams = reactive<API.UserQueryRequest>({
+  current: 1,
+  pageSize: 10,
+})
+
+// 获取数据
+const fetchData = async () => {
+  const res = await listUserVoByPageUsingPost({
+    ...searchParams,
+  })
+  if (res.data.data) {
+    dataList.value = res.data.data.records ?? []
+    total.value = res.data.data.total ?? 0
+  } else {
+    message.error('获取数据失败，' + res.data.message)
+  }
+}
+
+//分页参数
+const pagination = computed(() => {
+  return {
+    current: searchParams.current ?? 1,
+    pageSize: searchParams.pageSize ?? 10,
+    total: total.value,
+    showSizeChanger: true,
+    showTotal: (total: any) => `共 ${total} 条`,
+  }
+})
+//表格变化处理
+const doTableChange = (page: any) => {
+  searchParams.current = page.current
+  searchParams.pageSize = page.pageSize
+  fetchData()
+}
+//搜索
+const doSearch = () => {
+  //重置页码
+  searchParams.current = 1
+  fetchData()
+}
+
+// 页面加载时请求一次
+onMounted(() => {
+  fetchData()
+})
+
+//删除数据
+const doDelect = async (id: string) => {
+  if (!id) {
+    return
+  }
+  const res = await deleteUserUsingPost({ id })
+  if (res.data.code === 0) {
+    message.success('已删除')
+    fetchData()
+  } else {
+    message.error('删除失败')
+  }
+}
+</script>
