@@ -68,10 +68,10 @@ knife4j:
 cos:
   client:
     host: xxxxxxxxxx
-    secretId: xxxxxxxxxxxx
-    secretKey: xxxxxxxxxxxx
-    region: xxxxxxxxxxxx
-    bucket: xxxxxxxxxxxx
+    secretId: xxxxxxxxxx
+    secretKey: xxxxxxxxxx
+    region: xxxxxxxxxx
+    bucket: xxxxxxxxxx
 
 aliYunAi:
-  apiKey: xxxxxxxxxxxxx
+  apiKey: xxxxxxxxxx
