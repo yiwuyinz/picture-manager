@@ -344,7 +344,7 @@ public class PictureController {
     /**
      * 查询 AI 扩图任务
      */
-    @GetMapping("/out_painting/get_task")
+    @GetMapping("/out_painting/get_task")g
     public BaseResponse<GetOutPaintingTaskResponse> getPictureOutPaintingTask(String taskId) {
         ThrowUtils.throwIf(StrUtil.isBlank(taskId), ErrorCode.PARAMS_ERROR);
         GetOutPaintingTaskResponse task = aliYunAiApi.getOutPaintingTask(taskId);
