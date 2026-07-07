@@ -1,16 +1,14 @@
 package com.example.picturebackend.controller;
 
-import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.crypto.digest.DigestUtil;
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.picturebackend.annotation.AuthCheck;
-import com.example.picturebackend.api.aliyunai.AliYunAiApi;
-import com.example.picturebackend.api.aliyunai.model.CreateOutPaintingTaskResponse;
-import com.example.picturebackend.api.aliyunai.model.GetOutPaintingTaskResponse;
-import com.example.picturebackend.api.aliyunai.model.ImageSyncRequest;
-import com.example.picturebackend.api.aliyunai.model.ImageSyncResponse;
+import com.example.picturebackend.api.aliyunai.model.*;
+import com.example.picturebackend.api.aliyunai.service.AliYunAiApi;
+import com.example.picturebackend.api.aliyunai.service.OutPaintingQueryService;
+import com.example.picturebackend.api.aliyunai.service.TextToImageQueryService;
 import com.example.picturebackend.common.BaseResponse;
 import com.example.picturebackend.common.DeleteRequest;
 import com.example.picturebackend.common.ResultUtils;
@@ -44,7 +42,6 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -76,6 +73,12 @@ public class PictureController {
 
     @Resource
     private AliYunAiApi aliYunAiApi;
+
+    @Resource
+    private OutPaintingQueryService outPaintingQueryService;
+
+    @Resource
+    private TextToImageQueryService textToImageQueryService;
 
 
     @PostMapping("/upload")
@@ -330,32 +333,44 @@ public class PictureController {
      * 创建 AI 扩图任务
      */
     @PostMapping("/out_painting/create_task")
-    public BaseResponse<CreateOutPaintingTaskResponse> createPictureOutPaintingTask(
+    public BaseResponse<String> createPictureOutPaintingTask(
             @RequestBody CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest,
-            HttpServletRequest request) {
+            HttpServletRequest request, @RequestParam(defaultValue = "0") int priority) {
         if (createPictureOutPaintingTaskRequest == null || createPictureOutPaintingTaskRequest.getPictureId() == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         User loginUser = userService.getLoginUser(request);
-        CreateOutPaintingTaskResponse response = pictureService.createPictureOutPaintingTask(createPictureOutPaintingTaskRequest, loginUser);
-        return ResultUtils.success(response);
+        String localTaskId = pictureService.createPictureOutPaintingTask(createPictureOutPaintingTaskRequest, loginUser,priority);
+        return ResultUtils.success(localTaskId);
     }
 
     /**
      * 查询 AI 扩图任务
      */
-    @GetMapping("/out_painting/get_task")g
-    public BaseResponse<GetOutPaintingTaskResponse> getPictureOutPaintingTask(String taskId) {
-        ThrowUtils.throwIf(StrUtil.isBlank(taskId), ErrorCode.PARAMS_ERROR);
-        GetOutPaintingTaskResponse task = aliYunAiApi.getOutPaintingTask(taskId);
-        return ResultUtils.success(task);
+    @GetMapping("/out_painting/get_task")
+    public BaseResponse<TaskVO> getPictureOutPaintingTask(String localTaskId) {
+        ThrowUtils.throwIf(StrUtil.isBlank(localTaskId), ErrorCode.PARAMS_ERROR);
+        TaskVO taskVO = outPaintingQueryService.query(localTaskId);
+        if (taskVO == null) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"任务不存在");
+        }
+        return ResultUtils.success(taskVO);
     }
 
     @PostMapping("/image_sync")
-    public BaseResponse<String> getImageSyncUrl(@RequestBody ImageSyncRequest  imageSyncRequest){
-        ThrowUtils.throwIf(imageSyncRequest==null,ErrorCode.PARAMS_ERROR);
-        ImageSyncResponse response=aliYunAiApi.createImageSyncTask(imageSyncRequest);
-        String imageUrl= aliYunAiApi.getImageUrl(response);
-        return ResultUtils.success(imageUrl);
+    public BaseResponse<String> createTexttoImageTask(@RequestBody CreateTexttoImageTaskRequest createTexttoImageTaskRequest,@RequestParam(defaultValue = "0") int priority){
+        ThrowUtils.throwIf(createTexttoImageTaskRequest==null,ErrorCode.PARAMS_ERROR);
+        String localTaskId = pictureService.createTexttoImageTask(createTexttoImageTaskRequest,priority);
+        return ResultUtils.success(localTaskId);
+    }
+
+    @GetMapping("/image_sync/get_task")
+    public BaseResponse<TaskVO> getTexttoImageTask(String localTaskId) {
+        ThrowUtils.throwIf(StrUtil.isBlank(localTaskId), ErrorCode.PARAMS_ERROR);
+        TaskVO taskVO = textToImageQueryService.query(localTaskId);
+        if (taskVO == null) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"任务不存在");
+        }
+        return ResultUtils.success(taskVO);
     }
 }

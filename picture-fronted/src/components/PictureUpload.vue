@@ -47,6 +47,7 @@ const handleUpload = async ({ file }: any) => {
     const res = await uploadPictureUsingPost(params, {}, file)
     if (res.data.code === 0 && res.data.data) {
       message.success('图片上传成功')
+      console.log('上传返回:', JSON.stringify(res.data.data))
       props.onSuccess?.(res.data.data)
     } else {
       message.error('上传图片失败,' + res.data.message)

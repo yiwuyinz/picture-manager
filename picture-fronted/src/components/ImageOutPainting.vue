@@ -78,69 +78,46 @@ const createTask = async () => {
   if (!props.picture?.id) {
     return
   }
-  const res = await createPictureOutPaintingTaskUsingPost({
-    pictureId: props.picture.id,
-    // 可以根据需要设置扩图参数
-    parameters: {
-      xScale: 2,
-      yScale: 2,
+  const res = await createPictureOutPaintingTaskUsingPost(
+    {},
+    {
+      pictureId: props.picture.id,
+      // 可以根据需要设置扩图参数
+      parameters: {
+        xScale: 2,
+        yScale: 2,
+      },
     },
-  })
+  )
   if (res.data.code === 0 && res.data.data) {
     message.success('创建任务成功，请耐心等待，不要退出界面')
-    console.log(res.data.data.output.taskId)
-    taskId.value = res.data.data.output.taskId
-    // 开启轮询
-    startPolling()
+    console.log(res.data.data)
+    taskId.value = res.data.data
+    startPolling(taskId.value)
   } else {
     message.error('创建任务失败，' + res.data.message)
   }
 }
 
-// 轮询定时器
-let pollingTimer: NodeJS.Timeout = null
+const startPolling = (localTaskId: string) => {
+  const timer = setInterval(async () => {
+    const res = await getPictureOutPaintingTaskUsingGet({
+      localTaskId: localTaskId,
+    })
 
-// 清理轮询定时器
-const clearPolling = () => {
-  if (pollingTimer) {
-    clearInterval(pollingTimer)
-    pollingTimer = null
-    taskId.value = null
-  }
-}
+    const task = res.data.data
 
-// 开始轮询
-const startPolling = () => {
-  if (!taskId.value) return
-
-  pollingTimer = setInterval(async () => {
-    try {
-      const res = await getPictureOutPaintingTaskUsingGet({
-        taskId: taskId.value,
-      })
-      if (res.data.code === 0 && res.data.data) {
-        const taskResult = res.data.data.output
-        if (taskResult.taskStatus === 'SUCCEEDED') {
-          message.success('扩图任务成功')
-          resultImageUrl.value = taskResult.outputImageUrl
-          clearPolling()
-        } else if (taskResult.taskStatus === 'FAILED') {
-          message.error('扩图任务失败')
-          clearPolling()
-        }
-      }
-    } catch (error) {
-      console.error('轮询任务状态失败', error)
-      message.error('检测任务状态失败，请稍后重试')
-      clearPolling()
+    if (task.status === 'SUCCEEDED') {
+      clearInterval(timer)
+      resultImageUrl.value = task.result
+      message.success('扩图完成')
+    } else if (task.status === 'FAILED') {
+      clearInterval(timer)
+      message.error('失败：' + task.error)
     }
-  }, 3000) // 每隔 3 秒轮询一次
+    // QUEUED/SUBMITTED/RUNNING 继续轮询
+  }, 2000)
 }
-
-// 清理定时器，避免内存泄漏
-onUnmounted(() => {
-  clearPolling()
-})
 
 const uploadLoading = ref<boolean>(false)
 

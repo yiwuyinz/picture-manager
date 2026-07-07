@@ -8,11 +8,10 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.example.picturebackend.api.aliyunai.AliYunAiApi;
-import com.example.picturebackend.api.aliyunai.model.CreateOutPaintingTaskRequest;
-import com.example.picturebackend.api.aliyunai.model.CreateOutPaintingTaskResponse;
-import com.example.picturebackend.api.aliyunai.model.ImageSyncRequest;
-import com.example.picturebackend.api.aliyunai.model.ImageSyncResponse;
+import com.example.picturebackend.api.aliyunai.model.*;
+import com.example.picturebackend.api.aliyunai.service.AliYunAiApi;
+import com.example.picturebackend.api.aliyunai.service.OutPaintingProducer;
+import com.example.picturebackend.api.aliyunai.service.TextToImageProducer;
 import com.example.picturebackend.exception.BusinessException;
 import com.example.picturebackend.exception.ErrorCode;
 import com.example.picturebackend.exception.ThrowUtils;
@@ -42,12 +41,10 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -60,9 +57,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         implements PictureService {
-
-    @Resource
-    private FileManager fileManager;
 
     @Resource
     private UserService userService;
@@ -84,6 +78,12 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
     @Resource
     private AliYunAiApi aliYunAiApi;
+
+    @Resource
+    private OutPaintingProducer outPaintingProducer;
+
+    @Resource
+    private TextToImageProducer textToImageProducer;
 
     @Override
     public PictureVO uploadPicture(Object inputSource, PictureUploadRequest pictureUploadRequest, User loginUser) {
@@ -493,7 +493,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     }
 
     @Override
-    public CreateOutPaintingTaskResponse createPictureOutPaintingTask(CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest, User loginUser) {
+    public String createPictureOutPaintingTask(CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest, User loginUser,int priority) {
         // 获取图片信息
         Long pictureId = createPictureOutPaintingTaskRequest.getPictureId();
         Picture picture = Optional.ofNullable(this.getById(pictureId))
@@ -507,28 +507,24 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         taskRequest.setInput(input);
         BeanUtil.copyProperties(createPictureOutPaintingTaskRequest, taskRequest);
         // 创建任务
-        return aliYunAiApi.createOutPaintingTask(taskRequest);
+        return outPaintingProducer.submit(taskRequest,priority);
     }
 
     @Override
-    public ImageSyncResponse createImageSyncTask(ImageSyncRequest imageSyncRequest) {
-        if (imageSyncRequest == null) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "参数为空");
-        }
-        if (StrUtil.isBlank(imageSyncRequest.getModel())) {
+    public String createTexttoImageTask(CreateTexttoImageTaskRequest createTexttoImageTaskRequest,int priority) {
+        if (StrUtil.isBlank(createTexttoImageTaskRequest.getModel())) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "模型名称不能为空");
         }
-        if (imageSyncRequest.getInput() == null
-                || CollUtil.isEmpty(imageSyncRequest.getInput().getMessages())) {
+        if (createTexttoImageTaskRequest.getInput() == null
+                || StrUtil.isEmpty(createTexttoImageTaskRequest.getInput().getPrompt())) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求内容不能为空");
         }
-        ImageSyncResponse response = aliYunAiApi.createImageSyncTask(imageSyncRequest);
-        if (response.getOutput() == null
-                || CollUtil.isEmpty(response.getOutput().getChoices())) {
-            log.error("AI 响应内容为空，requestId: {}", response.getRequestId());
+        String localTaskId = textToImageProducer.submit(createTexttoImageTaskRequest,priority);
+        if (StrUtil.isEmpty(localTaskId)) {
+            log.error("提交任务失败：{}", localTaskId);
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "AI 生成结果为空");
         }
-        return response;
+        return localTaskId;
     }
 
 

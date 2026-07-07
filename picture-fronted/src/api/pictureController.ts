@@ -62,9 +62,11 @@ export async function getPictureVoByIdUsingGet(
   })
 }
 
-/** getImageSyncUrl POST /api/picture/image_sync */
-export async function getImageSyncUrlUsingPost(
-  body: API.ImageSyncRequest,
+/** createTexttoImageTask POST /api/picture/image_sync */
+export async function createTexttoImageTaskUsingPost(
+  // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
+  params: API.createTexttoImageTaskUsingPOSTParams,
+  body: API.CreateTexttoImageTaskRequest,
   options?: { [key: string]: any }
 ) {
   return request<API.BaseResponseString_>('/api/picture/image_sync', {
@@ -72,7 +74,25 @@ export async function getImageSyncUrlUsingPost(
     headers: {
       'Content-Type': 'application/json',
     },
+    params: {
+      ...params,
+    },
     data: body,
+    ...(options || {}),
+  })
+}
+
+/** getTexttoImageTask GET /api/picture/image_sync/get_task */
+export async function getTexttoImageTaskUsingGet(
+  // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
+  params: API.getTexttoImageTaskUsingGETParams,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseTaskVO_>('/api/picture/image_sync/get_task', {
+    method: 'GET',
+    params: {
+      ...params,
+    },
     ...(options || {}),
   })
 }
@@ -124,20 +144,22 @@ export async function listPictureVoByPageWithCacheUsingPost(
 
 /** createPictureOutPaintingTask POST /api/picture/out_painting/create_task */
 export async function createPictureOutPaintingTaskUsingPost(
+  // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
+  params: API.createPictureOutPaintingTaskUsingPOSTParams,
   body: API.CreatePictureOutPaintingTaskRequest,
   options?: { [key: string]: any }
 ) {
-  return request<API.BaseResponseCreateOutPaintingTaskResponse_>(
-    '/api/picture/out_painting/create_task',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      data: body,
-      ...(options || {}),
-    }
-  )
+  return request<API.BaseResponseString_>('/api/picture/out_painting/create_task', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    params: {
+      ...params,
+    },
+    data: body,
+    ...(options || {}),
+  })
 }
 
 /** getPictureOutPaintingTask GET /api/picture/out_painting/get_task */
@@ -146,16 +168,13 @@ export async function getPictureOutPaintingTaskUsingGet(
   params: API.getPictureOutPaintingTaskUsingGETParams,
   options?: { [key: string]: any }
 ) {
-  return request<API.BaseResponseGetOutPaintingTaskResponse_>(
-    '/api/picture/out_painting/get_task',
-    {
-      method: 'GET',
-      params: {
-        ...params,
-      },
-      ...(options || {}),
-    }
-  )
+  return request<API.BaseResponseTaskVO_>('/api/picture/out_painting/get_task', {
+    method: 'GET',
+    params: {
+      ...params,
+    },
+    ...(options || {}),
+  })
 }
 
 /** doPictureReview POST /api/picture/review */

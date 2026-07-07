@@ -3,6 +3,7 @@ package com.example.picturebackend.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.picturebackend.api.aliyunai.model.CreateOutPaintingTaskResponse;
+import com.example.picturebackend.api.aliyunai.model.CreateTexttoImageTaskRequest;
 import com.example.picturebackend.api.aliyunai.model.ImageSyncRequest;
 import com.example.picturebackend.api.aliyunai.model.ImageSyncResponse;
 import com.example.picturebackend.model.dto.file.UploadPictureResult;
@@ -24,6 +25,7 @@ import java.net.MalformedURLException;
 public interface PictureService extends IService<Picture> {
     /**
      * 上传图片
+     *
      * @param inpitSource
      * @param pictureUploadRequest
      * @param loginUser
@@ -33,6 +35,7 @@ public interface PictureService extends IService<Picture> {
 
     /**
      * 分页查询
+     *
      * @param pictureQueryRequest
      * @return
      */
@@ -40,6 +43,7 @@ public interface PictureService extends IService<Picture> {
 
     /**
      * 获取图片封装，可以为原有图片关联用户信息
+     *
      * @param picture
      * @param request
      * @return
@@ -48,6 +52,7 @@ public interface PictureService extends IService<Picture> {
 
     /**
      * 分页获取图片封装
+     *
      * @param picturePage
      * @param request
      * @return
@@ -56,6 +61,7 @@ public interface PictureService extends IService<Picture> {
 
     /**
      * 图片数据校验方法，用于更新和修改时校验
+     *
      * @param picture
      */
     void validPicture(Picture picture);
@@ -63,15 +69,16 @@ public interface PictureService extends IService<Picture> {
     /**
      * 图片审核
      */
-    void doPictureReview(PictureReviewRequest pictureReviewRequest,User loginUser);
+    void doPictureReview(PictureReviewRequest pictureReviewRequest, User loginUser);
 
     /**
      * 补充审核参数
      */
-    void fillReviewParams(Picture picture,User loginUser);
+    void fillReviewParams(Picture picture, User loginUser);
 
     /**
      * 批量抓取图片
+     *
      * @param pictureUploadByBatchRequest
      * @param loginUser
      * @return
@@ -80,32 +87,36 @@ public interface PictureService extends IService<Picture> {
 
     /**
      * 图片清理
+     *
      * @param oldPicture
      */
     void clearPictureFile(Picture oldPicture);
 
     /**
      * 校验逻辑
+     *
      * @param loginUser
      * @param picture
      */
-    void checkPictureAuth(User loginUser,Picture picture);
+    void checkPictureAuth(User loginUser, Picture picture);
 
     /**
      * 删除图片以及文件
+     *
      * @param pictureId
      * @param loginUser
      */
-    void deletePicture(long pictureId,User loginUser);
+    void deletePicture(long pictureId, User loginUser);
 
     /**
      * 编辑图片
+     *
      * @param pictureEditRequest
      * @param loginUser
      */
-    void editPicture(PictureEditRequest pictureEditRequest,User loginUser);
+    void editPicture(PictureEditRequest pictureEditRequest, User loginUser);
 
-    CreateOutPaintingTaskResponse createPictureOutPaintingTask(CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest,User loginUser);
+    String createPictureOutPaintingTask(CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest, User loginUser, int priority);
 
-    ImageSyncResponse createImageSyncTask(ImageSyncRequest imageSyncRequest);
+    String createTexttoImageTask(CreateTexttoImageTaskRequest createTexttoImageTaskRequest, int priority);
 }

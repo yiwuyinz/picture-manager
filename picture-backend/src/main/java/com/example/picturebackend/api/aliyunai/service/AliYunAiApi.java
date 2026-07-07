@@ -1,4 +1,4 @@
-package com.example.picturebackend.api.aliyunai;
+package com.example.picturebackend.api.aliyunai.service;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
@@ -30,7 +30,9 @@ public class AliYunAiApi {
     // 查询任务状态
     public static final String GET_OUT_PAINTING_TASK_URL = "https://dashscope.aliyuncs.com/api/v1/tasks/%s";
 
-    public static final String IMAGE_SYNC_TASK_URL = "https://ws-ljewsfrstui3d6eo.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation";
+    public static final String CREATE_IMAGE_SYNC_TASK_URL = "https://ws-ljewsfrstui3d6eo.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis";
+
+    public static final String GET_IMAGE_SYNC_TASK_URL = "https://ws-ljewsfrstui3d6eo.cn-beijing.maas.aliyuncs.com/api/v1/tasks/%s";
     /**
      * 创建任务
      *
@@ -85,9 +87,61 @@ public class AliYunAiApi {
     }
 
 
+    /**
+     * 创建任务
+     *
+     * @param createTexttoImageTaskRequest
+     * @return
+     */
+    public CreateTexttoImageTaskResponse createTexttoImageTask(CreateTexttoImageTaskRequest createTexttoImageTaskRequest) {
+        if (createTexttoImageTaskRequest == null) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "生成图片参数为空");
+        }
+        // 发送请求
+        HttpRequest httpRequest = HttpRequest.post(CREATE_IMAGE_SYNC_TASK_URL)
+                .header("X-DashScope-Async", "enable")
+                .header(Header.AUTHORIZATION, "Bearer " + apiKey)
+                .header(Header.CONTENT_TYPE, ContentType.JSON.getValue())
+                .body(JSONUtil.toJsonStr(createTexttoImageTaskRequest));
+        try (HttpResponse httpResponse = httpRequest.execute()) {
+            if (!httpResponse.isOk()) {
+                log.error("请求异常：{}", httpResponse.body());
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "AI 扩图失败");
+            }
+            CreateTexttoImageTaskResponse response = JSONUtil.toBean(httpResponse.body(), CreateTexttoImageTaskResponse.class);
+            String errorCode = response.getCode();
+            if (StrUtil.isNotBlank(errorCode)) {
+                String errorMessage = response.getMessage();
+                log.error("AI 生成失败，errorCode:{}, errorMessage:{}", errorCode, errorMessage);
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "AI 生成接口响应异常");
+            }
+            return response;
+        }
+    }
+
+    /**
+     * 查询创建的任务
+     *
+     * @param taskId
+     * @return
+     */
+    public GetTexttoImageTaskResponse getTexttoImageTask(String taskId) {
+        if (StrUtil.isBlank(taskId)) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "任务 id 不能为空");
+        }
+        try (HttpResponse httpResponse = HttpRequest.get(String.format(GET_IMAGE_SYNC_TASK_URL, taskId))
+                .header(Header.AUTHORIZATION, "Bearer " + apiKey)
+                .execute()) {
+            if (!httpResponse.isOk()) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "获取任务失败");
+            }
+            return JSONUtil.toBean(httpResponse.body(), GetTexttoImageTaskResponse.class);
+        }
+    }
+
     public ImageSyncResponse createImageSyncTask(ImageSyncRequest imageSyncRequest) {
         // 发送请求
-        HttpRequest httpRequest = HttpRequest.post(IMAGE_SYNC_TASK_URL)
+        HttpRequest httpRequest = HttpRequest.post(CREATE_IMAGE_SYNC_TASK_URL)
                 .header(Header.CONTENT_TYPE, ContentType.JSON.getValue())
                 .header(Header.AUTHORIZATION, "Bearer " + apiKey)
                 .body(JSONUtil.toJsonStr(imageSyncRequest));

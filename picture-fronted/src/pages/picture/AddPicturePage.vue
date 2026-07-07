@@ -17,7 +17,7 @@
         <ImageSync :picture="picture" :spaceId="spaceId" :onSuccess="onSuccess" />
       </a-tab-pane>
     </a-tabs>
-    <div v-if="picture" class="edit-bar">
+    <div v-if="picture?.url" class="edit-bar">
       <a-space size="middle">
         <a-button :icon="h(EditOutlined)" @click="doEditPicture">编辑图片</a-button>
         <a-button type="primary" ghost :icon="h(FullscreenOutlined)" @click="doImagePainting">
