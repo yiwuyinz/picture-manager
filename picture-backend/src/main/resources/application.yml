@@ -6,6 +6,23 @@ server:
       cookie:
         max-age: 2592000
 spring:
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        # 消费者并发数，限制同时处理的任务数量
+        concurrency: 3
+        max-concurrency: 5
+        # 每次只取1条，处理完再取下一条，防止某个消费者积压
+        prefetch: 1
+        # 失败重试：本地重试3次后转入死信或丢弃
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000ms
   # 空间图片分表
   shardingsphere:
     datasource:
